@@ -5,13 +5,13 @@ import socket
 class Client():
     def __init__(self):
 
-        msgFromClient = "Hello UDP Server"
-
         self.localIP = "127.0.0.1"
-        self.bytesToSend = str.encode(msgFromClient)
         self.serverAddressPort = (self.localIP, 20001)
         self.clientAddressPort = (self.localIP, 10001)
-        self.bufferSize = 1024
+        self.bufferSize = 32768
+
+        self.msgFromClient = "Hello UDP Server"
+        self.bytesToSend = str.encode(self.msgFromClient)
 
     def socket_initilization(self):
         # Create a UDP socket at client side

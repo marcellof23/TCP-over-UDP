@@ -6,20 +6,19 @@ class Server():
     def __init__(self):
         self.localIP = "127.0.0.1"
         self.localPort = 20001
-        self.bufferSize = 1024
+        self.bufferSize = 32768
+
+        # Create a datagram socket
+        self.serverSocket = None
         self.msgFromServer = "Hello UDP Client"
 
     def socket_initilization(self):
         bytesToSend = str.encode(self.msgFromServer)
 
-        # Create a datagram socket
-
-        UDPServerSocket = socket.socket(
-            family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
         # Bind to address and ip
-
-        UDPServerSocket.bind((self.localIP, self.localPort))
+        self.serverSocket = socket.socket(
+            family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        self.serverSocket.bind((self.localIP, self.localPort))
 
         print(f'Server started at port {self.localPort}')
         print("Listening to broadcast address for clients.\n")
@@ -30,7 +29,7 @@ class Server():
 
         while(True):
 
-            bytesAddressPair = UDPServerSocket.recvfrom(self.bufferSize)
+            bytesAddressPair = self.serverSocket.recvfrom(self.bufferSize)
 
             message = bytesAddressPair[0]
 
@@ -52,7 +51,7 @@ class Server():
                     print("%s. %s" % (str(idx+1), IpClient))
                 break
 
-            UDPServerSocket.sendto(bytesToSend, address)
+            self.serverSocket.sendto(bytesToSend, address)
 
 
 server = Server()
