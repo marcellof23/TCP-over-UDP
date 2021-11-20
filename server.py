@@ -54,5 +54,9 @@ class Server():
             self.serverSocket.sendto(bytesToSend, address)
 
 
-server = Server()
-server.socket_initilization()
+def main():
+    server = Server()
+    server.socket_initilization()
+
+
+main()
