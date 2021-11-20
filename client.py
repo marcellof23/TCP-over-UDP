@@ -2,32 +2,43 @@
 import socket
 
 
-localIP = "127.0.0.1"
+class Client():
+    def __init__(self):
 
-msgFromClient = "Hello UDP Server"
+        msgFromClient = "Hello UDP Server"
 
-bytesToSend = str.encode(msgFromClient)
+        self.localIP = "127.0.0.1"
+        self.bytesToSend = str.encode(msgFromClient)
+        self.serverAddressPort = (self.localIP, 20001)
+        self.clientAddressPort = (self.localIP, 10001)
+        self.bufferSize = 1024
 
-serverAddressPort = (localIP, 20001)
-clientAddressPort = (localIP, 10001)
+    def socket_initilization(self):
+        # Create a UDP socket at client side
 
-bufferSize = 1024
+        UDPClientSocket = socket.socket(
+            family=socket.AF_INET, type=socket.SOCK_DGRAM)
+
+        UDPClientSocket.bind(self.clientAddressPort)
+
+        # Send to server using created UDP socket
+
+        UDPClientSocket.sendto(self.bytesToSend, self.serverAddressPort)
+
+        msgFromServer = UDPClientSocket.recvfrom(self.bufferSize)
+
+        msg = "Message from Server {}".format(msgFromServer[0])
+
+        print(msg)
+
+    def broadcast(self):
+        self.sock.sendto(b'', ('255.255.255.255', self.server_port))
+        self.handle_handshake_request()
 
 
-# Create a UDP socket at client side
-
-UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-UDPClientSocket.bind(clientAddressPort)
-
-# Send to server using created UDP socket
-
-UDPClientSocket.sendto(bytesToSend, serverAddressPort)
+def main():
+    client = Client()
+    client.socket_initilization()
 
 
-msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-
-
-msg = "Message from Server {}".format(msgFromServer[0])
-
-print(msg)
+main()
