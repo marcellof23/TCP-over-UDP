@@ -1,4 +1,3 @@
-
 import socket
 
 
@@ -10,22 +9,25 @@ class Client():
         self.clientAddressPort = (self.localIP, 10001)
         self.bufferSize = 32768
 
-        self.msgFromClient = "Hello UDP Server"
-        self.bytesToSend = str.encode(self.msgFromClient)
+        # Create a datagram socket
+        self.clientSocket = None
 
     def socket_initilization(self):
         # Create a UDP socket at client side
 
-        UDPClientSocket = socket.socket(
+        msgFromClient = "Hello UDP Server"
+        bytesToSend = str.encode(msgFromClient)
+
+        self.clientSocket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
-        UDPClientSocket.bind(self.clientAddressPort)
+        self.clientSocket.bind(self.clientAddressPort)
 
         # Send to server using created UDP socket
 
-        UDPClientSocket.sendto(self.bytesToSend, self.serverAddressPort)
+        self.clientSocket.sendto(bytesToSend, self.serverAddressPort)
 
-        msgFromServer = UDPClientSocket.recvfrom(self.bufferSize)
+        msgFromServer = self.clientSocket.recvfrom(self.bufferSize)
 
         msg = "Message from Server {}".format(msgFromServer[0])
 

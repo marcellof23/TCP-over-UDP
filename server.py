@@ -1,4 +1,3 @@
-
 import socket
 
 
@@ -10,10 +9,11 @@ class Server():
 
         # Create a datagram socket
         self.serverSocket = None
-        self.msgFromServer = "Hello UDP Client"
 
     def socket_initilization(self):
-        bytesToSend = str.encode(self.msgFromServer)
+
+        msgFromServer = "Hello UDP Client"
+        bytesToSend = str.encode(msgFromServer)
 
         # Bind to address and ip
         self.serverSocket = socket.socket(
