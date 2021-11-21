@@ -1,10 +1,11 @@
 import socket
+import sys
 
 
 class Server():
-    def __init__(self):
+    def __init__(self, port):
         self.localIP = "127.0.0.1"
-        self.localPort = 20001
+        self.localPort = port
         self.bufferSize = 32768
 
         # Create a datagram socket
@@ -18,7 +19,10 @@ class Server():
         # Bind to address and ip
         self.serverSocket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        self.serverSocket.bind((self.localIP, self.localPort))
+
+        self.serverSocket.bind(('', self.localPort))
+        self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         print(f'Server started at port {self.localPort}')
         print("Listening to broadcast address for clients.\n")
@@ -55,7 +59,8 @@ class Server():
 
 
 def main():
-    server = Server()
+    port = int(sys.argv[1])
+    server = Server(port)
     server.socket_initilization()
 
 
