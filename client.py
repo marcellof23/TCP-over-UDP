@@ -64,7 +64,6 @@ class Client():
 
         self.serverIP = addr[0]
 
-        print(len(data))
         seq, ack, flags, _, checkSum, fileName, fileExtension, data = util.unpack(
             data)
         return seq, ack, flags, _, checkSum, fileName, fileExtension, data

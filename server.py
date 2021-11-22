@@ -128,8 +128,6 @@ class Handler():
         while(True):
             if(self.next_seq < self.current_seq + WINDOW_SZ):
                 data_block = self.file_reader.read()
-                print('-------------------')
-                print(data_block)
                 if(not data_block):
                     print("punten")
                     pass
