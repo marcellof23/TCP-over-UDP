@@ -4,8 +4,8 @@ import sys
 
 class Server():
     def __init__(self, port):
-        self.localIP = "127.0.0.1"
-        self.localPort = port
+        self.localIP = ''
+        self.serverAddressPort = (self.localIP, port)
         self.bufferSize = 32768
 
         # Create a datagram socket
@@ -20,11 +20,11 @@ class Server():
         self.serverSocket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
-        self.serverSocket.bind(('', self.localPort))
+        self.serverSocket.bind(self.serverAddressPort)
         self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        print(f'Server started at port {self.localPort}')
+        print(f'Server started at port {self.serverAddressPort}')
         print("Listening to broadcast address for clients.\n")
 
         # Listen for incoming datagrams
