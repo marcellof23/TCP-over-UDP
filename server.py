@@ -3,10 +3,11 @@ import sys
 
 
 class Server():
-    def __init__(self, port):
+    def __init__(self, port, file_path):
         self.localIP = "127.0.0.1"
         self.localPort = port
         self.bufferSize = 32768
+        self.filePath = file_path
 
         # Create a datagram socket
         self.serverSocket = None
@@ -16,7 +17,6 @@ class Server():
         msgFromServer = "Hello UDP Client"
         bytesToSend = str.encode(msgFromServer)
 
-        # Bind to address and ip
         self.serverSocket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
@@ -59,8 +59,18 @@ class Server():
 
 
 def main():
-    port = int(sys.argv[1])
-    server = Server(port)
+    if (len(sys.argv) != 3):
+        print("[Usage]: python server.py [port] [file path]")
+        return
+
+    try:
+        port = int(sys.argv[1])
+    except:
+        print("Make sure port is an integer")
+        return
+
+    file_path = sys.argv[2]
+    server = Server(port, file_path)
     server.socket_initilization()
 
 

@@ -3,23 +3,20 @@ import sys
 
 
 class Client():
-    def __init__(self, port):
+    def __init__(self, port, file_path):
 
         self.localIP = "127.0.0.1"
-        self.serverAddressPort = (self.localIP, 20001)
         self.clientAddressPort = (self.localIP, 10001)
         self.bufferSize = 32768
-        self.server_port = port
+        self.serverIP = None
+        self.serverPort = port
+        self.filePath = file_path
 
         # Create a datagram socket
         self.clientSocket = None
 
     def socket_initilization(self):
         # Create a UDP socket at client side
-
-        msgFromClient = "Hello UDP Server"
-        bytesToSend = str.encode(msgFromClient)
-
         self.clientSocket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
@@ -27,28 +24,26 @@ class Client():
         self.clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Send to server using created UDP socket
-
-        # self.clientSocket.sendto(bytesToSend, self.serverAddressPort)
-
-        # msgFromServer = self.clientSocket.recvfrom(self.bufferSize)
-
-        # msg = "Message from Server {}".format(msgFromServer[0])
-
-        # print(msg)
-
     def broadcast(self):
-        msgFromClient = "Hello UDP Server"
-        bytesToSend = str.encode(msgFromClient)
-        self.clientSocket.sendto(bytesToSend, ('255.255.255.255', 1337))
-        msgFromServer = self.clientSocket.recvfrom(self.bufferSize)
-        msg = "Message from Server {}".format(msgFromServer[0])
-        print(msg)
+        self.clientSocket.sendto(b"", ('255.255.255.255', self.serverPort))
+        [message, address] = self.clientSocket.recvfrom(self.bufferSize)
+        self.serverIP = address[0]
+        print("Message from Server {}".format(message))
 
 
 def main():
-    port = int(sys.argv[1])
-    client = Client(port)
+    if (len(sys.argv) != 3):
+        print("[Usage]: python client.py [port] [save file path]")
+        return
+
+    try:
+        port = int(sys.argv[1])
+    except:
+        print("Make sure port is an integer")
+        return
+
+    file_path = sys.argv[2]
+    client = Client(port, file_path)
     client.socket_initilization()
     client.broadcast()
 
