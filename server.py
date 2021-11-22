@@ -4,7 +4,9 @@ import util
 import os
 from file import File
 
-WINDOW_SZ = 3
+WINDOW_SZ = 2
+
+
 class Server():
     def __init__(self, port, file_path):
         self.localIP = "127.0.0.1"
@@ -35,7 +37,7 @@ class Server():
     def listen_clients(self):
         # Listen for incoming datagrams
         while(True):
-            [message, address] = self.serverSocket.recvfrom(self.bufferSize)
+            [message, address] = self.serverSocket.recvfrom(32832)
 
             address_formatted = "(%s:%s)" % (address[0], address[1])
 
@@ -51,31 +53,33 @@ class Server():
                 self.print_clients()
                 self.handle_transfer()
                 break
-    
+
+                ## Eric is here
+
     def print_clients(self):
         print(f'{len(self.clientList)} clients found:')
         for idx, client in enumerate(self.clientList):
             print("%s. %s:%s" % (str(idx+1), client[0], client[1]))
 
     def handle_transfer(self):
-        msgFromServer = "Hello UDP Client"
-        bytesToSend = str.encode(msgFromServer)
         for address in self.clientList:
-            self.serverSocket.sendto(bytesToSend, address)
+            Handler(address[0], address[1], self.serverSocket,
+                    self.filePath, self.sendMetadata)
 
 
 class Handler():
     def __init__(self, ip, port, socket, file_path, sendMetadata):
-      self.targetIP = ip
-      self.targetPort = port
-      self.socket = socket
-      self.current_seq = 700
-      self.next_seq = 700
-      self.file_metadata = os.path.splitext(file_path) if sendMetadata else None
-      self.file_reader = File(file_path, 'rb',step = 32678)
+        self.targetIP = ip
+        self.targetPort = port
+        self.socket = socket
+        self.current_seq = 700
+        self.next_seq = 700
+        self.file_metadata = os.path.splitext(
+            file_path) if sendMetadata else None
+        self.file_reader = File(file_path, 'rb', step=32678)
 
-      self.handshake()
-      self.file_transfer()
+        self.handshake()
+        self.file_transfer()
 
     def handshake(self):
         print("Starting 3 Way Handshake")
@@ -83,7 +87,7 @@ class Handler():
         self.send(self.current_seq, 0, util.SYN)
         print('Segment SEQ=%s Sent' % (self.current_seq))
         while(True):
-            seq, ack, flags, _, _, _, _, _  = self.receive()
+            seq, ack, flags, _, _, _, _, _ = self.receive()
 
             # send the last ack
             if (flags == util.SYN + util.ACK and ack == self.current_seq + 1):
@@ -95,63 +99,72 @@ class Handler():
                 break
 
     def send(self, seq, ack, flags, data=None):
-        if (self.file_metadata != None):          
-            packet = util.pack(seq, ack, flags, data=data, fileName=self.file_metadata[0], fileExtension=self.file_metadata[1])
+        if (self.file_metadata != None):
+            packet = util.pack(seq, ack, flags, data=data,
+                               fileName=self.file_metadata[0], fileExtension=self.file_metadata[1])
         else:
             packet = util.pack(seq, ack, flags, data=data)
-        self.sock.sendto(packet.build(data),(self.ip, self.port))
+        print(len(packet))
+        self.socket.sendto(packet, (self.targetIP, self.targetPort))
 
     def receive(self):
-        data, _ = self.sock.recvfrom(34880)
-        seq_num,ack_num,flags,_,checksum,file_name,file_extension,data = util.unpack(data)
-        return seq_num,ack_num,flags,_,checksum,file_name,file_extension,data
+        data, _ = self.socket.recvfrom(34880)
+        seq_num, ack_num, flags, _, checksum, fileName, file_extension, data = util.unpack(
+            data)
+        return seq_num, ack_num, flags, _, checksum, fileName, file_extension, data
 
     def go_back_N_algorithm(self):
         print('Commencing Go Back N protocol with WINDOW SIZE={}'.format(WINDOW_SZ))
-        self.file_reader.offset = self.file_reader.offset - WINDOW_SZ
-        self.next_seq = self.current_seq
+        if(self.file_reader.offset > self.file_reader.step * 3):
+            self.file_reader.offset -= (WINDOW_SZ * self.file_reader.step)
+            self.next_seq = self.current_seq
 
     def file_transfer(self):
         print('Initiate to transfer the file...')
-        self.socket.settimeout(1)
+        timeout = 1
+        self.socket.settimeout(timeout)
         self.current_seq = self.next_seq = 1
-        
+
         while(True):
             if(self.next_seq < self.current_seq + WINDOW_SZ):
                 data_block = self.file_reader.read()
+                print('-------------------')
+                print(data_block)
                 if(not data_block):
+                    print("punten")
                     pass
                 else:
-                    self.send(seq_num=self.next_seq, ack_num=0,
-                              flags=util.DATA , data=data_block)
+                    self.send(seq=self.next_seq, ack=0,
+                              flags=util.DATA, data=data_block)
                     print('[Segment SEQ={}] Sent'.format(self.next_seq))
                     self.next_seq = self.next_seq + 1
             try:
-                seq_num, ack_num, flags, _, checksum, file_name, file_extension, data = self.receive()
+                seq, ack, flags, _, checksum, fileName, fileExtension, data = self.receive()
                 check_ACK = flags & util.ACK
                 check_ACK = util.ACK == check_ACK
 
                 if(check_ACK):
-                    print('[Segment SEQ={}] Acked'.format(self.curr_seq))
-                    self.curr_seq_num = ack_num + 1
-                    if(self.curr_seq == self.next_seq and self.file_reader.EOF()):
+                    print('[Segment SEQ={}] Acked'.format(self.current_seq))
+                    self.current_seq = ack + 1
+                    if(self.current_seq == self.next_seq and self.file_reader.is_EOF()):
                         break
                     else:
-                        self.socket.settimeout(1)
+                        timeout = 1
+                        self.socket.settimeout(timeout)
 
             except socket.timeout:
                 print('[Segment SEQ={}] NOT ACKED. SOCKET TIMEOUT or DUPLICATE ACK FOUND'.format(
-                    self.curr_seq_num))
+                    self.current_seq))
                 timeout = min(timeout << 1, 10)
                 self.socket.settimeout(timeout)
                 self.go_back_N_algorithm()
 
-            except:
-                print('Something went wrong between file transfer..')
-        
+            # except:
+            #     print('Something went wrong between file transfer..')
+
         print('Closing connection with client...')
         self.file_reader.close()
-        self.send(seq_num=self.current_seq, ack_num=0, flags=util.FIN)
+        self.send(seq=self.current_seq, ack=0, flags=util.FIN)
         self.socket.close()
 
 
@@ -168,5 +181,6 @@ def main():
 
     file_path = sys.argv[2]
     server = Server(port, file_path)
+
 
 main()
