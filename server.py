@@ -8,7 +8,7 @@ class Server():
         self.localPort = port
         self.bufferSize = 32768
         self.filePath = file_path
-        self.clientIPList = []
+        self.clientList = []
 
         # Create a datagram socket
         self.serverSocket = None
@@ -30,28 +30,22 @@ class Server():
 
         # Listen for incoming datagrams
         while(True):
-            bytesAddressPair = self.serverSocket.recvfrom(self.bufferSize)
+            [message, address] = self.serverSocket.recvfrom(self.bufferSize)
 
-            message = bytesAddressPair[0]
+            address_formatted = "(%s:%s)" % (address[0], address[1])
 
-            address = bytesAddressPair[1]
+            print("[!] Client %s found" % (address_formatted))
 
-            address_merge = "%s:%s" % (address[0], address[1])
+            self.clientList.append(address)
 
-            clientIP = "[!] Client {} found".format(address_merge)
-
-            self.clientIPList.append(address_merge)
-
-            print(clientIP)
-            serverInput = input("[?] Listen more? (y/n)")
+            serverInput = input("[?] Listen more? (y/n) ")
 
             if(serverInput.lower() != 'y' and serverInput.lower() == 'n'):
-                print(f'{len(self.clientIPList)} clients found:')
-                for idx, IpClient in enumerate(self.clientIPList):
-                    print("%s. %s" % (str(idx+1), IpClient))
+                print(f'{len(self.clientList)} clients found:')
+                for idx, client in enumerate(self.clientList):
+                    print("%s. %s:%s" % (str(idx+1), client[0], client[1]))
+                self.serverSocket.sendto(bytesToSend, address)
                 break
-
-            self.serverSocket.sendto(bytesToSend, address)
 
 
 def main():
