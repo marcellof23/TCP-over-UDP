@@ -3,15 +3,9 @@ import sys
 
 
 class Server():
-<<<<<<< HEAD
-    def __init__(self, port):
-        self.localIP = ''
-        self.serverAddressPort = (self.localIP, port)
-=======
     def __init__(self, port, file_path):
         self.localIP = "127.0.0.1"
         self.localPort = port
->>>>>>> 4ade557030f7cfb7e8223a6c7573cea6d0328a83
         self.bufferSize = 32768
         self.filePath = file_path
         self.clientIPList = []
