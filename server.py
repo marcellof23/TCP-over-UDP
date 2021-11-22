@@ -8,15 +8,12 @@ class Server():
         self.localPort = port
         self.bufferSize = 32768
         self.filePath = file_path
+        self.clientIPList = []
 
         # Create a datagram socket
         self.serverSocket = None
 
     def socket_initilization(self):
-
-        msgFromServer = "Hello UDP Client"
-        bytesToSend = str.encode(msgFromServer)
-
         self.serverSocket = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
@@ -27,12 +24,12 @@ class Server():
         print(f'Server started at port {self.localPort}')
         print("Listening to broadcast address for clients.\n")
 
+    def listen_clients(self):
+        msgFromServer = "Hello UDP Client"
+        bytesToSend = str.encode(msgFromServer)
+
         # Listen for incoming datagrams
-
-        clientIPList = []
-
         while(True):
-
             bytesAddressPair = self.serverSocket.recvfrom(self.bufferSize)
 
             message = bytesAddressPair[0]
@@ -43,15 +40,14 @@ class Server():
 
             clientIP = "[!] Client {} found".format(address_merge)
 
-            clientIPList.append(address_merge)
+            self.clientIPList.append(address_merge)
 
             print(clientIP)
             serverInput = input("[?] Listen more? (y/n)")
 
             if(serverInput.lower() != 'y' and serverInput.lower() == 'n'):
-                clientIPList.pop()
-                print(f'{len(clientIPList)} clients found:')
-                for idx, IpClient in enumerate(clientIPList):
+                print(f'{len(self.clientIPList)} clients found:')
+                for idx, IpClient in enumerate(self.clientIPList):
                     print("%s. %s" % (str(idx+1), IpClient))
                 break
 
@@ -72,6 +68,7 @@ def main():
     file_path = sys.argv[2]
     server = Server(port, file_path)
     server.socket_initilization()
+    server.listen_clients()
 
 
 main()
