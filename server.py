@@ -11,14 +11,14 @@ MAXIMUM_CLIENTS = 5
 
 
 class Server():
-    def __init__(self, port, file_path):
+    def __init__(self, port, file_path, activate_conccurent):
         self.localIP = "127.0.0.1"
         self.localPort = port
         self.bufferSize = 32768
         self.filePath = file_path
         self.clientList = []
         self.sendMetadata = False
-
+        self.activate_conccurent = activate_conccurent
         # Create a datagram socket
         self.serverSocket = None
 
@@ -54,10 +54,13 @@ class Server():
                 serverInput = input("[?] Do you want to send metadata? (y/n)")
                 self.sendMetadata = serverInput.lower() == 'y'
                 self.print_clients()
-                self.handle_transfer()
+                if(self.activate_conccurent):
+                    self.handle_transfer_with_thread()
+                else:
+                    self.handle_transfer()
                 break
 
-                ## Eric is here
+                # Eric is here
 
     def print_clients(self):
         print(f'{len(self.clientList)} clients found:')
@@ -67,37 +70,33 @@ class Server():
     def handle_transfer(self):
         for address in self.clientList:
             Handler(address[0], address[1], self.serverSocket,
-                    self.filePath, self.sendMetadata, self.clientList)
+                    self.filePath, self.sendMetadata)
+        self.serverSocket.close()
 
-    # def send_file_packets_with_thread(self, data_block):
-
-    #     with concurrent.futures.ThreadPoolExecutor(max_workers=MAXIMUM_CLIENTS) as executor:
-    #         futures = []
-    #         for client_address in self.client_list:
-    #             futures.append(
-    #                 executor.submit(
-    #                     , wiki_page_url=url, timeout=0.00001
-    #                 )
-    #             )
-    #         for future in concurrent.futures.as_completed(futures):
-    #             try:
-    #                 print(future.result())
-    #             except requests.ConnectTimeout:
-    #                 print("ConnectTimeout.")
-    #     self.send(seq=self.next_seq, ack=0,
-    #               flags=util.DATA, data=data_block)
-    #     print('[Segment SEQ={}] Sent'.format(self.next_seq))
-    #     self.next_seq = self.next_seq + 1
+    def handle_transfer_with_thread(self):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAXIMUM_CLIENTS) as executor:
+            futures = []
+            for client_address in self.clientList:
+                client_address_ip = client_address[0]
+                client_address_port = client_address[1]
+                futures.append(
+                    executor.submit(
+                        Handler, client_address_ip, client_address_port, self.serverSocket,
+                        self.filePath, self.sendMetadata
+                    )
+                )
+            for future in concurrent.futures.as_completed(futures):
+                print(future.result())
+        self.serverSocket.close()
 
 
 class Handler():
-    def __init__(self, ip, port, socket, file_path, sendMetadata, clientList):
+    def __init__(self, ip, port, socket, file_path, sendMetadata):
         self.targetIP = ip
         self.targetPort = port
         self.socket = socket
         self.current_seq = 700
         self.next_seq = 700
-        self.client_list = clientList
         self.file_metadata = os.path.splitext(
             file_path) if sendMetadata else None
         self.file_reader = File(file_path, 'rb', step=32678)
@@ -129,10 +128,11 @@ class Handler():
                                fileName=self.file_metadata[0], fileExtension=self.file_metadata[1])
         else:
             packet = util.pack(seq, ack, flags, data=data)
+        print((self.targetIP, self.targetPort))
         self.socket.sendto(packet, (self.targetIP, self.targetPort))
 
     def receive(self):
-        data, _ = self.socket.recvfrom(33080)
+        data, _ = self.socket.recvfrom(34880)
         seq_num, ack_num, flags, _, checksum, fileName, file_extension, data = util.unpack(
             data)
         return seq_num, ack_num, flags, _, checksum, fileName, file_extension, data
@@ -152,18 +152,8 @@ class Handler():
         print('[Segment SEQ={}] Sent'.format(self.next_seq))
         self.next_seq = self.next_seq + 1
 
-    def check_file_acked(self):
-        _, ack, flags, _, _, _, _, _ = self.receive()
-
-        if(util.check_packet(flags, util.ACK)):
-            print('[Segment SEQ={}] Acked'.format(self.current_seq))
-            self.current_seq = ack + 1
-            if(self.current_seq == self.next_seq and self.file_reader.is_EOF()):
-                return True
-            else:
-                self.timeout = 1
-                self.socket.settimeout(self.timeout)
-                return False
+    def check_transfer_finished(self):
+        return self.current_seq == self.next_seq and self.file_reader.is_EOF()
 
     def file_transfer(self):
         print('Initiate to transfer the file...')
@@ -179,19 +169,15 @@ class Handler():
                 else:
                     self.send_file_packets(data_block)
             try:
-                res = self.check_file_acked()
-                if (res):
-                    break
-                # _, ack, flags, _, _, _, _, _ = self.receive()
-
-                # if(util.check_packet(flags, util.ACK)):
-                #     print('[Segment SEQ={}] Acked'.format(self.current_seq))
-                #     self.current_seq = ack + 1
-                #     if(self.current_seq == self.next_seq and self.file_reader.is_EOF()):
-                #         break
-                #     else:
-                #         timeout = 1
-                #         self.socket.settimeout(timeout)
+                _, ack, flags, _, _, _, _, _ = self.receive()
+                if(util.check_packet(flags, util.ACK)):
+                    self.current_seq = ack + 1
+                    finished = self.check_transfer_finished()
+                    if (finished):
+                        break
+                    else:
+                        self.timeout = 1
+                        self.socket.settimeout(self.timeout)
 
             except socket.timeout:
                 print('[Segment SEQ={}] NOT ACKED. SOCKET TIMEOUT or DUPLICATE ACK FOUND'.format(
@@ -203,7 +189,6 @@ class Handler():
         print('Closing connection with client...')
         self.file_reader.close()
         self.send(seq=self.current_seq, ack=0, flags=util.FIN)
-        self.socket.close()
 
 
 def main():
@@ -218,7 +203,7 @@ def main():
         return
 
     file_path = sys.argv[2]
-    server = Server(port, file_path)
+    server = Server(port, file_path, True)
 
 
 main()
