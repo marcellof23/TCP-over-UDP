@@ -7,7 +7,6 @@ from file import File
 
 class Client():
     def __init__(self, port, file_path):
-
         self.localIP = "127.0.0.1"
         self.clientAddressPort = (self.localIP, 10001)
         self.bufferSize = 32768
@@ -36,24 +35,29 @@ class Client():
 
     def broadcast(self):
         self.clientSocket.sendto(b"", ('255.255.255.255', self.serverPort))
-        self.handshake()
+        self.second_handshake()
 
-    def handshake(self):
+    def second_handshake(self):
+        # waiting for the first handshake
         while(True):
             seq, ack, flags, _, _, _, _, _ = self.receive()
-            check_SYN = flags & util.SYN == util.SYN
-            check_ACK = flags & util.ACK == util.ACK
-
-            if (check_SYN):
-                # send SYN and ACK, first handshake
-                self.send(self.current_seq, seq+1, util.SYN + util.ACK)
+            if (util.check_packet(flags, util.SYN)):
                 print('Segment SEQ=%s Sent SYN+ACK' % (self.current_seq))
-            elif (check_ACK and ack == self.current_seq + 1):
+                # send SYN and ACK for the first handshake
+                self.send(self.current_seq, seq+1, util.SYN + util.ACK)
+                break
+        self.finalize_handshake()
+
+    def finalize_handshake(self):
+        while(True):
+            seq, ack, flags, _, _, _, _, _ = self.receive()
+
+            if (util.check_packet(flags, util.ACK) and ack == self.current_seq + 1):
                 # send ACK, last handshake
                 print("Segment SEQ=%s Acked" % (self.current_seq))
-                self.current_seq = ack
-                print("Connection established")
                 break
+        self.current_seq = ack
+        print("Connection established")
 
     def send(self, seq, ack, flags, data=None):
         packet = util.pack(seq, ack, flags, data=data)
@@ -82,11 +86,9 @@ class Client():
                 requireMetadata = True
                 print("File Name: {}".format(fileName))
                 print("File Extension: {}".format(fileExtension))
+                self.file_writer.writeMetadata(fileName, fileExtension)
 
-            check_FIN = flags & util.FIN
-            check_FIN = util.FIN == check_FIN
-
-            if (not check_FIN):
+            if (not util.check_packet(flags, util.FIN)):
                 if(checkSum == util.checksum(data) and seq == self.next_seq):
                     self.send(seq=0, ack=self.next_seq, flags=util.ACK)
                     self.file_writer.write(data)

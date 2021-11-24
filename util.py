@@ -1,31 +1,39 @@
 
 import struct
 
+DATA = 0b00000000
 SYN = 0b00000010
 ACK = 0b00010000
 FIN = 0b00000001
-DATA = 0b00000000
+
+
+def check_packet(flags, target):
+    checker = flags & target
+    checker = target == checker
+    return checker
 
 
 def checksum(data):
-    data_length = len(data)
-    if (data_length % 2 == 1):
-        data += b'\0'
-
     # Jumlah smua bit per 16
-    result = 0
+    checksum = 0
+    data_length = len(data)
+    if (data_length % 2):
+        # data += b'\0'
+        data_length += 1
+        data += struct.pack('!B', 0)
+
     for i in range(0, data_length, 2):
-        result += data[i] << 8 + data[i+1]
+        checksum += data[i] << 8 + data[i+1]
 
     # add carry
-    result = (result >> 16) + (result & 0xffff)
+    checksum = (checksum >> 16) + (checksum & 0xffff)
 
-    return ~result & 0xffff
+    return ~checksum & 0xffff
 
 
 def pack(seq, ack, flags, fileName='', fileExtension='', data=None):
     return (struct.pack(
-        '!IIBBH1024s1024s32768s',
+        '!iibbH64s64s32768s',
         seq,
         ack,
         flags,
@@ -38,6 +46,5 @@ def pack(seq, ack, flags, fileName='', fileExtension='', data=None):
 
 def unpack(data):
     seq, ack, flags, _, checkSum, fileName, fileExtension, data = struct.unpack(
-        '!IIBBH1024s1024s32768s', data)
+        '!iibbH64s64s32768s', data)
     return (seq, ack, flags, _, checkSum, fileName, fileExtension, data)
-# 4s4s1s1s2s1024s1024s32768s
