@@ -86,7 +86,10 @@ class Server():
                     )
                 )
             for future in concurrent.futures.as_completed(futures):
-                print(future.result())
+                try:
+                    print(future.result())
+                except requests.ConnectTimeout:
+                    print("Connect timeout..")
         self.serverSocket.close()
 
 
@@ -128,7 +131,6 @@ class Handler():
                                fileName=self.file_metadata[0], fileExtension=self.file_metadata[1])
         else:
             packet = util.pack(seq, ack, flags, data=data)
-        print((self.targetIP, self.targetPort))
         self.socket.sendto(packet, (self.targetIP, self.targetPort))
 
     def receive(self):
