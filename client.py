@@ -50,7 +50,7 @@ class Client():
 
     def finalize_handshake(self):
         while(True):
-            seq, ack, flags, _, _, _, _, _ = self.receive()
+            _, ack, flags, _, _, _, _, _ = self.receive()
 
             if (util.check_packet(flags, util.ACK) and ack == self.current_seq + 1):
                 # send ACK, last handshake
