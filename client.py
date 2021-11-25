@@ -15,6 +15,12 @@ class Client():
         self.filePath = file_path
         self.current_seq = 200
         self.next_seq = 200
+
+        try:
+            os.remove(file_path)
+        except:
+            _ = 1
+
         self.file_writer = File(file_path, 'ab+')
 
         # Create a datagram socket
