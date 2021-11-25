@@ -98,7 +98,7 @@ class Client():
                 else:
                     print("Segment SEQ=%s Damaged, Ack Previous Sequence Number" % (
                         self.next_seq))
-                    self.send(seq_num=0, ack_num=self.next_seq -
+                    self.send(seq=0, ack=self.next_seq -
                               1, flags=util.ACK)
 
             else:
