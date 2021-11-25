@@ -209,10 +209,9 @@ def main():
         is_concurrent = int(sys.argv[3]) == 1
     except:
         is_concurrent = False
-        return
 
     file_path = sys.argv[2]
-    server = Server(port, file_path, is_concurrent)
+    Server(port, file_path, is_concurrent)
 
 
 main()

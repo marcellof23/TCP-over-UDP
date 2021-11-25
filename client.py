@@ -8,7 +8,7 @@ from file import File
 class Client():
     def __init__(self, port, file_path):
         self.localIP = "0.0.0.0"
-        self.clientAddressPort = (self.localIP, 10001)
+        self.clientAddressPort = (self.localIP, 10002)
         self.bufferSize = 32768
         self.serverIP = None
         self.serverPort = port
@@ -118,7 +118,7 @@ def main():
         return
 
     file_path = sys.argv[2]
-    client = Client(port, file_path)
+    Client(port, file_path)
 
 
 main()
