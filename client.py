@@ -90,7 +90,7 @@ class Client():
 
             if (not util.check_packet(flags, util.FIN)):
                 if(checkSum == util.checksum(data) and seq == self.next_seq):
-                    self.send(seq=0, ack=self.next_seq, flags=util.ACK)
+                    self.send(0, self.next_seq, util.ACK)
                     self.file_writer.write(data)
                     print("Segment SEQ=%s Received, Ack Sent" %
                           (self.next_seq))
@@ -98,8 +98,8 @@ class Client():
                 else:
                     print("Segment SEQ=%s Damaged, Ack Previous Sequence Number" % (
                         self.next_seq))
-                    self.send(seq=0, ack=self.next_seq -
-                              1, flags=util.ACK)
+                    self.send(0, self.next_seq -
+                              1, util.ACK)
 
             else:
                 self.clientSocket.close()

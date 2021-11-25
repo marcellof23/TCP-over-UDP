@@ -149,8 +149,8 @@ class Handler():
         return self.file_reader.read()
 
     def send_file_packets(self, data_block):
-        self.send(seq=self.next_seq, ack=0,
-                  flags=util.DATA, data=data_block)
+        self.send(self.next_seq, 0,
+                  util.DATA, data=data_block)
         print('[Segment SEQ={}] Sent'.format(self.next_seq))
         self.next_seq = self.next_seq + 1
 
@@ -190,7 +190,7 @@ class Handler():
 
         print('Closing connection with client...')
         self.file_reader.close()
-        self.send(seq=self.current_seq, ack=0, flags=util.FIN)
+        self.send(self.current_seq, 0, util.FIN)
 
 
 def main():
