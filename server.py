@@ -40,7 +40,8 @@ class Server():
     def listen_clients(self):
         # Listen for incoming datagrams
         while(True):
-            [message, address] = self.serverSocket.recvfrom(32832)
+            [message, address] = self.serverSocket.recvfrom(
+                self.bufferSize + 64*2 + 12)
 
             address_formatted = "(%s:%s)" % (address[0], address[1])
 
@@ -59,8 +60,6 @@ class Server():
                 else:
                     self.handle_transfer()
                 break
-
-                # Eric is here
 
     def print_clients(self):
         print(f'{len(self.clientList)} clients found:')
@@ -87,7 +86,7 @@ class Server():
                 )
             for future in concurrent.futures.as_completed(futures):
                 try:
-                    print(future.result())
+                    _ = future.result()
                 except requests.ConnectTimeout:
                     print("Connect timeout..")
         self.serverSocket.close()
@@ -100,16 +99,17 @@ class Handler():
         self.socket = socket
         self.current_seq = 700
         self.next_seq = 700
+        self.bufferSize = 32768
         self.file_metadata = os.path.splitext(
             file_path) if sendMetadata else None
-        self.file_reader = File(file_path, 'rb', step=32678)
+        self.file_reader = File(file_path, 'rb', step=self.bufferSize)
 
         self.first_handshake()
         self.file_transfer()
 
     def first_handshake(self):
         self.send(self.current_seq, 0, util.SYN)
-        print('Segment SEQ=%s Sent' % (self.current_seq))
+        print('[Segment SEQ=%s] Sent' % (self.current_seq))
         self.third_handshake()
 
     def third_handshake(self):
@@ -117,12 +117,12 @@ class Handler():
         while(True):
             seq, ack, flags, _, _, _, _, _ = self.receive()
             if (flags == util.SYN + util.ACK and ack == self.current_seq + 1):
-                print('Segment SEQ=%s Acked' % self.current_seq)
+                print('[Segment SEQ=%s] Acked' % self.current_seq)
                 break
         # send the last ack
         self.send(ack, seq+1, util.ACK)
         self.current_seq = ack
-        print('Segment SEQ=%s Sent' % self.current_seq)
+        print('[Segment SEQ=%s] Sent' % self.current_seq)
         print('Connection established')
 
     def send(self, seq, ack, flags, data=None):
@@ -134,7 +134,7 @@ class Handler():
         self.socket.sendto(packet, (self.targetIP, self.targetPort))
 
     def receive(self):
-        data, _ = self.socket.recvfrom(34880)
+        data, _ = self.socket.recvfrom(self.bufferSize + 64*2 + 12)
         seq_num, ack_num, flags, _, checksum, fileName, file_extension, data = util.unpack(
             data)
         return seq_num, ack_num, flags, _, checksum, fileName, file_extension, data
@@ -158,7 +158,7 @@ class Handler():
         return self.current_seq == self.next_seq and self.file_reader.is_EOF()
 
     def file_transfer(self):
-        print('Initiate to transfer the file...')
+        print('Initiate to transfer the file for %s...' % self.targetIP)
         self.timeout = 1
         self.socket.settimeout(self.timeout)
         self.current_seq = self.next_seq = 1
@@ -188,14 +188,15 @@ class Handler():
                 self.socket.settimeout(self.timeout)
                 self.go_back_N_algorithm()
 
-        print('Closing connection with client...')
+        print('File transfer finished with %s\nClosing connection with %s...'
+              % (self.targetIP, self.targetIP))
         self.file_reader.close()
         self.send(self.current_seq, 0, util.FIN)
 
 
 def main():
-    if (len(sys.argv) != 3):
-        print("[Usage]: python server.py [port] [file path]")
+    if (len(sys.argv) < 3 or len(sys.argv) >= 5):
+        print("[Usage]: python server.py [port] [file path] [is_concurrent]")
         return
 
     try:
@@ -204,8 +205,14 @@ def main():
         print("Make sure port is an integer")
         return
 
+    try:
+        is_concurrent = int(sys.argv[3]) == 1
+    except:
+        is_concurrent = False
+        return
+
     file_path = sys.argv[2]
-    server = Server(port, file_path, True)
+    server = Server(port, file_path, is_concurrent)
 
 
 main()

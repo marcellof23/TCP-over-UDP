@@ -8,7 +8,7 @@ from file import File
 class Client():
     def __init__(self, port, file_path):
         self.localIP = "0.0.0.0"
-        self.clientAddressPort = (self.localIP, 10006)
+        self.clientAddressPort = (self.localIP, 10001)
         self.bufferSize = 32768
         self.serverIP = None
         self.serverPort = port
@@ -42,7 +42,7 @@ class Client():
         while(True):
             seq, ack, flags, _, _, _, _, _ = self.receive()
             if (util.check_packet(flags, util.SYN)):
-                print('Segment SEQ=%s Sent SYN+ACK' % (self.current_seq))
+                print('[Segment SEQ=%s] Sent SYN+ACK' % (self.current_seq))
                 # send SYN and ACK for the first handshake
                 self.send(self.current_seq, seq+1, util.SYN + util.ACK)
                 break
@@ -54,7 +54,7 @@ class Client():
 
             if (util.check_packet(flags, util.ACK) and ack == self.current_seq + 1):
                 # send ACK, last handshake
-                print("Segment SEQ=%s Acked" % (self.current_seq))
+                print("[Segment SEQ=%s] Acked" % (self.current_seq))
                 break
         self.current_seq = ack
         print("Connection established")
@@ -64,7 +64,7 @@ class Client():
         self.clientSocket.sendto(packet, (self.serverIP, self.serverPort))
 
     def receive(self):
-        data, addr = self.clientSocket.recvfrom(34880)
+        data, addr = self.clientSocket.recvfrom(self.bufferSize + 64*2 + 12)
 
         self.serverIP = addr[0]
 
@@ -92,11 +92,11 @@ class Client():
                 if(checkSum == util.checksum(data) and seq == self.next_seq):
                     self.send(0, self.next_seq, util.ACK)
                     self.file_writer.write(data)
-                    print("Segment SEQ=%s Received, Ack Sent" %
+                    print("[Segment SEQ=%s] Received, Ack Sent" %
                           (self.next_seq))
                     self.next_seq += 1
                 else:
-                    print("Segment SEQ=%s Damaged, Ack Previous Sequence Number" % (
+                    print("[Segment SEQ=%s] Damaged, Ack Previous Sequence Number" % (
                         self.next_seq))
                     self.send(0, self.next_seq -
                               1, util.ACK)
