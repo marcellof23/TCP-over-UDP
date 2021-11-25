@@ -6,9 +6,11 @@ from file import File
 
 
 class Client():
+    ''
+
     def __init__(self, port, file_path):
         self.localIP = "0.0.0.0"
-        self.clientAddressPort = (self.localIP, 10002)
+        self.clientAddressPort = (self.localIP, 10005)
         self.bufferSize = 32768
         self.serverIP = None
         self.serverPort = port
@@ -70,7 +72,7 @@ class Client():
         self.clientSocket.sendto(packet, (self.serverIP, self.serverPort))
 
     def receive(self):
-        data, addr = self.clientSocket.recvfrom(self.bufferSize + 64*2 + 12)
+        data, addr = self.clientSocket.recvfrom(34880)
 
         self.serverIP = addr[0]
 

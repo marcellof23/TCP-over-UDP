@@ -33,7 +33,7 @@ def checksum(data):
 
 def pack(seq, ack, flags, fileName='', fileExtension='', data=None):
     return (struct.pack(
-        '!iibbH64s64s32768s',
+        '!iibbH1024s1024s32768s',
         seq,
         ack,
         flags,
@@ -46,5 +46,5 @@ def pack(seq, ack, flags, fileName='', fileExtension='', data=None):
 
 def unpack(data):
     seq, ack, flags, _, checkSum, fileName, fileExtension, data = struct.unpack(
-        '!iibbH64s64s32768s', data)
+        '!iibbH1024s1024s32768s', data)
     return (seq, ack, flags, _, checkSum, fileName, fileExtension, data)
