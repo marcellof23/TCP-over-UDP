@@ -15,7 +15,7 @@ class File():
 
     def is_EOF(self):
         self.bufferFile.seek(self.offset)
-        return not (self.bufferFile.read(self.step) == '')
+        return not (self.bufferFile.read(self.step))
 
     def write(self, data):
         data = data.rstrip(b'\x00')
