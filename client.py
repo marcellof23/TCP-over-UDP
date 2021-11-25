@@ -7,7 +7,7 @@ from file import File
 
 class Client():
     def __init__(self, port, file_path):
-        self.localIP = "127.0.0.1"
+        self.localIP = "0.0.0.0"
         self.clientAddressPort = (self.localIP, 10006)
         self.bufferSize = 32768
         self.serverIP = None
