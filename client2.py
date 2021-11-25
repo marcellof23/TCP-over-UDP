@@ -64,7 +64,7 @@ class Client():
         self.clientSocket.sendto(packet, (self.serverIP, self.serverPort))
 
     def receive(self):
-        data, addr = self.clientSocket.recvfrom(34880)
+        data, addr = self.clientSocket.recvfrom(33280)
 
         self.serverIP = addr[0]
 

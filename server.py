@@ -6,7 +6,7 @@ import concurrent.futures
 import requests
 from file import File
 
-WINDOW_SZ = 10
+WINDOW_SZ = 4
 MAXIMUM_CLIENTS = 5
 
 
@@ -134,7 +134,7 @@ class Handler():
         self.socket.sendto(packet, (self.targetIP, self.targetPort))
 
     def receive(self):
-        data, _ = self.socket.recvfrom(34880)
+        data, _ = self.socket.recvfrom(33280)
         seq_num, ack_num, flags, _, checksum, fileName, file_extension, data = util.unpack(
             data)
         return seq_num, ack_num, flags, _, checksum, fileName, file_extension, data
@@ -205,7 +205,7 @@ def main():
         return
 
     file_path = sys.argv[2]
-    server = Server(port, file_path, True)
+    Server(port, file_path, True)
 
 
 main()
