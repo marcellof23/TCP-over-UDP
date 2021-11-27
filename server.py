@@ -6,6 +6,7 @@ import concurrent.futures
 import requests
 from file import File
 
+
 WINDOW_SZ = 3
 MAXIMUM_CLIENTS = 5
 
@@ -41,7 +42,7 @@ class Server():
         # Listen for incoming datagrams
         while(True):
             [message, address] = self.serverSocket.recvfrom(
-                self.bufferSize + 64*2 + 12)
+                32832)
 
             address_formatted = "(%s:%s)" % (address[0], address[1])
 
@@ -134,14 +135,14 @@ class Handler():
         self.socket.sendto(packet, (self.targetIP, self.targetPort))
 
     def receive(self):
-        data, _ = self.socket.recvfrom(self.bufferSize + 64*2 + 12)
+        data, _ = self.socket.recvfrom(34880)
         seq_num, ack_num, flags, _, checksum, fileName, file_extension, data = util.unpack(
             data)
         return seq_num, ack_num, flags, _, checksum, fileName, file_extension, data
 
     def go_back_N_algorithm(self):
         print('Commencing Go Back N protocol with WINDOW SIZE={}'.format(WINDOW_SZ))
-        if(self.file_reader.offset > self.file_reader.step * 3):
+        if(self.file_reader.offset > self.file_reader.step * WINDOW_SZ):
             self.file_reader.offset -= (WINDOW_SZ * self.file_reader.step)
             self.next_seq = self.current_seq
 
@@ -207,11 +208,13 @@ def main():
 
     try:
         is_concurrent = int(sys.argv[3]) == 1
+        if(is_concurrent):
+            print("Activating conccurent file transfer..")
     except:
         is_concurrent = False
 
     file_path = sys.argv[2]
-    server = Server(port, file_path, is_concurrent)
+    Server(port, file_path, is_concurrent)
 
 
 main()
