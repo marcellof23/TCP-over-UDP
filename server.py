@@ -6,7 +6,8 @@ import concurrent.futures
 import requests
 from file import File
 
-WINDOW_SZ = 2
+
+WINDOW_SZ = 3
 MAXIMUM_CLIENTS = 5
 
 
